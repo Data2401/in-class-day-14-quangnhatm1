@@ -1,6 +1,6 @@
 ---
 title: "Join Lab"
-author: "Dr. Shoemaker"
+author: "Quang Le"
 date: "DATA 2401"
 output: html_document
 ---
@@ -24,12 +24,20 @@ my_flights <- na.omit(my_flights) ## this dataset has data on cancelled flights 
 Create a dataframe of the average arrival delays for each _destination_
 
 ```{r}
+average_arrival_delay <- my_flights %>% 
+  group_by(dest) %>% 
+  summarize(average_arrival_delay = mean(arr_delay,na.rm = TRUE)) %>% 
+arrange(desc(average_arrival_delay))
+head(average_arrival_delay)
 
 ```
 
 Then use `left_join()` to join on the "airports" dataframe, which has the airport information.
 
 ```{r}
+arrival_with_airports <- average_arrival_delay %>%
+  left_join(airports, by = c("dest" = "faa"))
+print(arrival_with_airports)
 
 ```
 
@@ -39,25 +47,40 @@ Note here: the column names don't match anymore!
 Which airport had the largest average arrival delay?
 
 ```{r}
-
+largest_delay_airport <- arrival_with_airports %>%
+  filter(!is.na(average_arrival_delay)) %>% 
+  arrange(desc(average_arrival_delay)) %>%  
+  slice(1) 
+print(largest_delay_airport)
 ```
 
 
 
-What is the average departure delay for each airline? To answer this with something more than just the FAA code of the airline name, you need to create a dataframe of the average departure delay for each _airline_, then use `left_join()` to join on the "airlines" dataframe
+What is the average departure delay for each airline? To answer this with something more than just the FAA code of the airline name, you need to create a dataframe of the average departure delay for each _airline_, then use `left_join()` to join on the "airlines" dataframe.
 
 
 ```{r}
+average_dep_delay <- my_flights %>% 
+  group_by(carrier) %>% 
+  summarize(average_dep_delay = mean(dep_delay,na.rm = TRUE)) %>% 
+  arrange(desc(average_dep_delay))
+head(average_dep_delay)
 
+average_dep_airlines <- average_dep_delay %>% 
+  left_join(airlines, by = "carrier")
+head(average_dep_airlines)
+```
 
-````
 
 Which airline had the smallest average departure delay? 
 
 
 
 ```{r}
-
+smallest_delay_airlines <- average_dep_airlines %>%
+  arrange(average_dep_delay) %>%  
+  slice(1) 
+print(smallest_delay_airlines)
 
 
 ```
@@ -82,8 +105,18 @@ Now you want to find each flight that went to one of those destinations. You cou
 ```{r}
 flights %>% 
   semi_join(top_dest)
+
 ```
 
 
 What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
 Perform the two joins below and consider what the results are. 
+```{r}
+  anti_join(flights, airports, by = c("dest" = "faa"))
+# anti_join keeps rows in the first dataframe (flights) where there is no match in the second dataframe (airports), based on the specified join condition.
+# These destinations might represent missing or unrecorded airport codes in the airports dataset.
+```
+```{r}
+  anti_join(airports, flights, by = c("faa" = "dest"))
+# These are airports present in the airports dataset that do not have any flights recorded in the flights dataset.
+```
